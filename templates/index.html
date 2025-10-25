@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<meta charset="utf-8">
+<title>TimmyTime LIVE — Lock Build</title>
+<link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <main id="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo">Timmy<span class="neon">Bubbles</span></div>
+        <div class="subtitle">Now Serving — <span id="counter">—</span></div>
+      </div>
+      <div class="controls">
+        <label class="video-label">Active Clip</label>
+        <select id="videoSelect"></select>
+        <button id="setVideoBtn">Set</button>
+      </div>
+    </header>
+
+    <section class="stage">
+      <div class="video-wrap">
+        <video id="heroVideo" playsinline autoplay loop muted preload="auto">
+          <!-- source populated by JS -->
+        </video>
+      </div>
+
+      <div id="bubbleLayer" class="bubble-layer" aria-hidden="true"></div>
+    </section>
+
+    <footer class="footer">
+      <small>Locked build — do not partial-edit <strong>app.py</strong> unless you mean it.</small>
+    </footer>
+  </main>
+
+<script src="/static/main.js"></script>
+</body>
+</html>
