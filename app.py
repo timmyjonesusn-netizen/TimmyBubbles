@@ -92,7 +92,7 @@ def api_set_video():
     write_config(cfg)
     return jsonify({"ok": True, "active_video": filename})
 
-# Serve videos (static folder would do this normally, but explicit route is fine)
+# Serve videos
 @app.route("/videos/<path:filename>")
 def videos(filename):
     return send_from_directory(VIDEOS_DIR, filename)
