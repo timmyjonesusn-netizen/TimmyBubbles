@@ -1,9 +1,25 @@
 from flask import Flask, render_template_string, send_from_directory
 import os
 
-app = Flask(__name__, static_folder='static')
+app = Flask(__name__)
 
-# ---------- HTML TEMPLATE AS STRING ----------
+# -------------------------------------------------
+# CONFIG: where your videos actually live
+# -------------------------------------------------
+# EDIT THIS LINE so it points to your TimmyVideoStore folder.
+# You are on iPhone storage, so in your environment this path might look like
+# "../TimmyVideoStore" or "../../TimmyVideoStore" depending on where app.py lives.
+#
+# Here's the plan:
+# - If app.py is in "Visual Code/yourproject"
+# - And TimmyVideoStore is next to Visual Code (same top level 'On My iPhone')
+# Try "../TimmyVideoStore"
+#
+VIDEO_FOLDER = "../TimmyVideoStore"  # <-- adjust this if needed
+
+# -------------------------------------------------
+# MAIN PAGE HTML
+# -------------------------------------------------
 page_html = """
 <!DOCTYPE html>
 <html lang="en">
@@ -26,12 +42,9 @@ page_html = """
   --playlist-bg: rgba(0,0,0,0.4);
   --playlist-radius: 14px;
   --white: #fff;
-  --accent: #ffffff;
   --aqua: #69ffd8;
   --shadow-strong: 0 20px 60px rgba(0,0,0,0.9);
-  --panel-pad: 24px;
   --max-width: 480px;
-  --bubble-colors: radial-gradient(circle at 30% 30%, rgba(255,0,255,0.9) 0%, rgba(0,0,0,0) 70%);
 }
 
 /* page lock */
@@ -44,12 +57,12 @@ html, body {
   color: var(--white);
   width: 100%;
   height: 100%;
-  overflow: hidden; /* no page bounce */
+  overflow: hidden; /* no iOS white bounce on body */
   -webkit-user-select: none;
   user-select: none;
 }
 
-/* container that we keep fixed size and scroll INSIDE */
+/* scrollable inner shell */
 .app-shell {
   position: relative;
   box-sizing: border-box;
@@ -66,7 +79,7 @@ html, body {
   background: var(--panel-grad);
 }
 
-/* header / counter area */
+/* header / counter */
 .counter-wrap {
   text-align: center;
   padding: 8px 12px 20px;
@@ -97,14 +110,14 @@ html, body {
   text-shadow: var(--text-glow);
 }
 
-/* tap edit hint (invisible but keeps tap zone chunky) */
+/* tapable hitbox */
 .counter-number-touchzone {
   display: inline-block;
   padding: 8px 12px;
   border-radius: 12px;
 }
 
-/* video panel */
+/* video frame */
 .video-wrap {
   background: #000;
   border-radius: 16px;
@@ -121,7 +134,7 @@ html, body {
   background:#000;
 }
 
-/* playlist list */
+/* playlist list box */
 .playlist-list {
   margin-top: 24px;
   border: 1px solid var(--card-border);
@@ -156,17 +169,17 @@ html, body {
   background: rgba(255,0,255,0.15);
 }
 
-/* sig line */
+/* sig */
 .sig-line {
   color: var(--aqua);
   text-align: center;
   font-size: 1rem;
   font-weight: 500;
-  padding: 24px 12px 80px; /* bottom pad so text not glued to bottom edge */
+  padding: 24px 12px 80px;
   text-shadow: 0 0 10px rgba(105,255,216,0.8), 0 0 30px rgba(105,255,216,0.4);
 }
 
-/* ====== BUBBLES ====== */
+/* bubbles layer */
 #bubbles {
   position: fixed;
   left: 0;
@@ -174,7 +187,7 @@ html, body {
   width:100%;
   height:100%;
   overflow:hidden;
-  pointer-events: auto; /* we WANT to tap bubbles */
+  pointer-events: auto; /* can tap to pop */
   z-index: 0;
 }
 
@@ -194,12 +207,11 @@ html, body {
   100% { transform: translateY(-200vh) scale(0.6); opacity:0; }
 }
 
-/* layer order: bubbles back, app-shell front */
+/* stacking order */
 .app-shell {
   position: relative;
   z-index: 5;
 }
-
 .counter-wrap,
 .video-wrap,
 .playlist-list,
@@ -208,7 +220,7 @@ html, body {
   z-index: 10;
 }
 
-/* make text large on iPhone 17PM */
+/* mobile font scale */
 @media (max-width:480px){
   .counter-topline { font-size: 1.6rem; }
   .counter-number  { font-size: 3rem; }
@@ -220,10 +232,10 @@ html, body {
 
 <body>
 
-<!-- floating bubbles background -->
+<!-- bubble effects behind everything -->
 <div id="bubbles"></div>
 
-<!-- main panel -->
+<!-- main UI panel -->
 <div class="app-shell" id="appShell">
 
   <!-- COUNTER -->
@@ -237,15 +249,15 @@ html, body {
     <div class="counter-subline">First Punch Only</div>
   </div>
 
-  <!-- VIDEO -->
+  <!-- VIDEO PLAYER -->
   <div class="video-wrap">
     <video id="mainVideo"
       controls
       preload="auto"
-      poster="/static/images/preview.jpg"
+      poster=""
       playsinline
     >
-      <source src="/videos/intro.mp4" type="video/mp4">
+      <source src="/videos/Info.mp4" type="video/mp4">
       Your browser does not support the video tag.
     </video>
   </div>
@@ -291,23 +303,17 @@ html, body {
 </div><!-- /app-shell -->
 
 <script>
-/* ========== iOS SCROLL LOCK INSIDE PANEL ==========
-   We allow scroll only inside .app-shell, not the whole body,
-   so no white bounce outside.
-*/
+/* Stop body bounce; only scroll inside .app-shell */
 const appShell = document.getElementById("appShell");
-appShell.addEventListener('touchmove', (e)=>{ /* allow panel scroll */ }, {passive:false});
+appShell.addEventListener('touchmove', (e)=>{}, {passive:false});
 
-// block body scroll bounce
 document.addEventListener('touchmove', function(e){
   if(!appShell.contains(e.target)){
     e.preventDefault();
   }
 }, {passive:false});
 
-/* ========== EDIT COUNTER ON TAP ==========
-   Tap the number "999,999", prompt for new number.
-*/
+/* Tap counter to edit number */
 function editCount(evt){
   evt.stopPropagation();
   const el = document.getElementById("count-number");
@@ -319,33 +325,25 @@ function editCount(evt){
 }
 document.getElementById("count-number").addEventListener("click", editCount);
 
-
-/* ========== BUBBLES ==========
-   We spawn random bubbles that float up and can be popped.
-*/
+/* Floating bubbles that pop on tap */
 const bubbleContainer = document.getElementById("bubbles");
 
 function makeBubble(){
   const b = document.createElement("div");
   b.className = "bubble";
 
-  // size between 20px and 90px
-  const size = 20 + Math.random()*70;
+  const size = 20 + Math.random()*70; // 20px - 90px
   b.style.width = size + "px";
   b.style.height = size + "px";
 
-  // start X random
-  const startX = Math.random()*100; // vw %
+  const startX = Math.random()*100;
   b.style.left = startX + "vw";
 
-  // random duration (how fast it floats)
   const dur = 6 + Math.random()*10;
   b.style.animationDuration = dur + "s";
 
-  // pop on tap
   b.addEventListener("click", (evt)=>{
     evt.stopPropagation();
-    // pop effect
     b.style.transition = "all 0.15s ease-out";
     b.style.transform = "scale(1.3)";
     b.style.opacity = "0";
@@ -354,37 +352,39 @@ function makeBubble(){
 
   bubbleContainer.appendChild(b);
 
-  // auto-remove after done
   setTimeout(()=>{ b.remove(); }, dur*1000 + 200);
 }
 
-// make bubbles forever
 setInterval(()=>{
-  // make 1-3 bubbles per tick
   const howMany = 1 + Math.floor(Math.random()*3);
   for(let i=0;i<howMany;i++){
     makeBubble();
   }
 }, 1200);
-
 </script>
+
 </body>
 </html>
 """
 
-# ---------- ROUTES ----------
+# -------------------------------------------------
+# ROUTES
+# -------------------------------------------------
 
 @app.route("/")
 def home():
     return render_template_string(page_html)
 
-# serve videos (intro.mp4 lives in static/videos)
 @app.route("/videos/<path:filename>")
 def serve_video(filename):
-    return send_from_directory(os.path.join(app.static_folder, "videos"), filename)
+    # Serve files directly from TimmyVideoStore
+    return send_from_directory(VIDEO_FOLDER, filename)
 
-# DEFAULT FLASK RUN (no gunicorn per your rule)
+# -------------------------------------------------
+# RUN LOCAL ONLY
+# -------------------------------------------------
 if __name__ == "__main__":
-    # On Render you usually bind 0.0.0.0 and PORT env.
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=True)
+    # This is LOCAL. No Render, no gunicorn.
+    # 0.0.0.0 lets you hit it from same Wi-Fi if you want,
+    # but it's still just whatever device is running it.
+    app.run(host="0.0.0.0", port=5000, debug=True)
