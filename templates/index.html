@@ -1,40 +1,135 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
-<meta charset="utf-8">
-<title>TimmyTime LIVE — Lock Build</title>
-<link rel="stylesheet" href="/static/styles.css">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no,maximum-scale=1.0" />
+<title>TimmyTime LIVE</title>
+<style>
+:root {
+  --bg1: #100016;
+  --bg2: #220033;
+  --neon-pink: #ff33cc;
+  --neon-purple: #b066ff;
+  --text-glow: 0 0 10px #fff, 0 0 30px #ff00ff;
+}
+html,body{
+  margin:0; padding:0; height:100%; overflow-y:auto;
+  background: radial-gradient(circle at 20% 30%, var(--bg2) 0%, var(--bg1) 80%);
+  color:white; font-family: 'Trebuchet MS', sans-serif;
+  text-align:center;
+}
+h1,h2{margin:0;}
+#counter{
+  font-size: clamp(3rem, 15vw, 6rem);
+  font-weight:900;
+  color:#fff;
+  text-shadow: var(--text-glow);
+}
+.panel{
+  margin:1rem auto;
+  padding:1rem;
+  width:90%;
+  background:rgba(0,0,0,0.05);
+  border:2px solid var(--neon-pink);
+  border-radius:12px;
+  box-shadow:0 0 15px rgba(255,0,255,0.4);
+  position:relative; z-index:20;
+}
+button.playlist{
+  display:block;
+  width:90%; margin:1rem auto;
+  padding:1rem;
+  font-size:1.3rem;
+  color:#fff;
+  background:rgba(50,0,50,0.4);
+  border:1px solid var(--neon-purple);
+  border-radius:10px;
+  backdrop-filter:blur(8px);
+  text-shadow:0 0 5px var(--neon-pink);
+  box-shadow:0 0 15px rgba(255,0,255,0.3);
+  cursor:pointer;
+  z-index:20;
+  transition:transform .2s;
+}
+button.playlist:hover{transform:scale(1.05);}
+#footer{
+  font-size:.9rem;
+  color:aqua;
+  text-shadow:0 0 8px aqua;
+  margin-top:2rem;
+}
+.bubble{
+  position:fixed;
+  border-radius:50%;
+  background:radial-gradient(circle at 30% 30%, rgba(255,255,255,0.8), rgba(255,0,255,0.1));
+  opacity:0.5;
+  animation: floatUp linear infinite;
+  z-index:5;
+}
+@keyframes floatUp{
+  0%{transform:translateY(100vh) scale(0.5);}
+  100%{transform:translateY(-10vh) scale(1);}
+}
+</style>
 </head>
 <body>
-  <main id="app">
-    <header class="topbar">
-      <div class="brand">
-        <div class="logo">Timmy<span class="neon">Bubbles</span></div>
-        <div class="subtitle">Now Serving — <span id="counter">—</span></div>
-      </div>
-      <div class="controls">
-        <label class="video-label">Active Clip</label>
-        <select id="videoSelect"></select>
-        <button id="setVideoBtn">Set</button>
-      </div>
-    </header>
 
-    <section class="stage">
-      <div class="video-wrap">
-        <video id="heroVideo" playsinline autoplay loop muted preload="auto">
-          <!-- source populated by JS -->
-        </video>
-      </div>
+<h2>Now Serving</h2>
+<h1 id="counter">1,111</h1>
+<h2>First Punch Only</h2>
 
-      <div id="bubbleLayer" class="bubble-layer" aria-hidden="true"></div>
-    </section>
+<div class="panel">
+  <button class="playlist">🔊 Playlist 1</button>
+  <button class="playlist">🔥 Playlist 2</button>
+  <button class="playlist">💀 Playlist 3</button>
+  <button class="playlist">💅 Playlist 4</button>
+  <button class="playlist">🚀 Playlist 5</button>
+</div>
 
-    <footer class="footer">
-      <small>Locked build — do not partial-edit <strong>app.py</strong> unless you mean it.</small>
-    </footer>
-  </main>
+<div id="footer">Made by Timmy · iPhone 17 Pro Max² · tb<br>🖖 Warp core stable. Beginning ambient sequence.</div>
 
-<script src="/static/main.js"></script>
+<script>
+/* ---------- COUNTER ---------- */
+let current = 1111;
+const max = 999999;
+const counterEl = document.getElementById("counter");
+function updateCounter(){
+  if(current < max){
+    current += Math.floor(Math.random()*7)+1; // smooth slow climb
+    counterEl.textContent = current.toLocaleString();
+    requestAnimationFrame(updateCounter);
+  }
+}
+requestAnimationFrame(updateCounter);
+
+/* ---------- BUBBLES ---------- */
+const colors = ["#ff33cc","#aa00ff","#ff8800","#69ffd8"];
+for(let i=0;i<25;i++){
+  const b=document.createElement("div");
+  b.classList.add("bubble");
+  const size=Math.random()*60+20;
+  b.style.width=b.style.height=size+"px";
+  b.style.left=Math.random()*100+"%";
+  b.style.animationDuration=(10+Math.random()*20)+"s";
+  b.style.background=`radial-gradient(circle at 30% 30%, ${colors[Math.floor(Math.random()*colors.length)]}, transparent)`;
+  document.body.appendChild(b);
+}
+
+/* ---------- AUDIO ---------- */
+const audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+function playAmbient(){
+  const o=audioCtx.createOscillator();
+  const g=audioCtx.createGain();
+  o.type="sine"; o.frequency.setValueAtTime(220,audioCtx.currentTime);
+  g.gain.setValueAtTime(0.02,audioCtx.currentTime);
+  o.connect(g).connect(audioCtx.destination);
+  o.start();
+  setTimeout(()=>{o.stop();},4000);
+}
+document.body.addEventListener("click",()=>playAmbient(),{once:true});
+
+/* ---------- DEBUG LOGGER ---------- */
+console.log("🖖 Spock Log: Interface running stable on iPhone bridge.");
+</script>
 </body>
 </html>
